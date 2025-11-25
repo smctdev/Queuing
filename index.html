@@ -21,135 +21,89 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       text-align: center;
     }
-    h2 {
-      color: #007bff;
-      margin-bottom: 20px;
-    }
-    input {
-      width: 90%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-bottom: 15px;
-      font-size: 16px;
-    }
-    button {
-      padding: 12px 20px;
-      width: 100%;
-      border: none;
-      border-radius: 8px;
-      background: #007bff;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .result {
-      margin-top: 20px;
-      text-align: left;
-      font-size: 15px;
-    }
-    .link-box {
-      background: #f9f9f9;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 8px;
-      font-family: monospace;
-      word-break: break-all;
-      border: 1px solid #ddd;
-    }
-    .copy-icon {
-    cursor: pointer;
-    float: right;
-    margin-left: 10px;
-    font-size: 18px;
-    color: #007bff;
-    transition: 0.2s;
-    }
-
-    .copy-icon:hover {
-    color: #0056b3;
-    }
-
+    h2 { color: #007bff; margin-bottom: 20px; }
+    input { width: 90%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 16px; }
+    button { padding: 12px 20px; width: 100%; border: none; border-radius: 8px; background: #007bff; color: white; font-size: 16px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .result { margin-top: 20px; text-align: left; font-size: 15px; }
+    .link-box { background: #f9f9f9; padding: 10px; border-radius: 6px; margin-top: 8px; font-family: monospace; word-break: break-all; border: 1px solid #ddd; }
+    .copy-icon { cursor: pointer; float: right; margin-left: 10px; font-size: 18px; color: #007bff; transition: 0.2s; }
+    .copy-icon:hover { color: #0056b3; }
   </style>
 </head>
 <body>
 
-  <div class="box">
-    <h2>Create Queue</h2>
+<div class="box">
+  <h2>Create Queue</h2>
+  <input type="text" id="queueName" placeholder="Enter queue name...">
+  <button onclick="createQueue()">Generate Links</button>
+  <div class="result" id="result"></div>
+</div>
 
-    <input type="text" id="queueName" placeholder="Enter queue name...">
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
-    <button onclick="createQueue()">Generate Links</button>
+  const firebaseConfig = {
+    apiKey: "AIzaSyB_6cF1Qk-3v6ZFsx1md9syGVlFkfTo8x0",
+    authDomain: "queuing-da34e.firebaseapp.com",
+    databaseURL: "https://queuing-da34e-default-rtdb.firebaseio.com",
+    projectId: "queuing-da34e",
+    storageBucket: "queuing-da34e.firebasestorage.app",
+    messagingSenderId: "733841664712",
+    appId: "1:733841664712:web:c909227b93771e337553fd",
+    measurementId: "G-3VXRRXXFF3"
+  };
 
-    <div class="result" id="result"></div>
-  </div>
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-  <script>
-    function generateId(len = 10) {
-      const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-      let id = "";
-      for (let i = 0; i < len; i++) {
-        id += chars[Math.floor(Math.random() * chars.length)];
-      }
-      return id;
+  function generateId(len = 10) {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let id = "";
+    for (let i = 0; i < len; i++) {
+      id += chars[Math.floor(Math.random() * chars.length)];
     }
+    return id;
+  }
 
- function createQueue() {
+  function createQueue() {
     const name = document.getElementById("queueName").value.trim();
     if (!name) return alert("Please enter a queue name");
 
     const queueId = generateId();
+    const queueRef = ref(db, 'queues/' + queueId);
 
-    // Save queue data inside localStorage
-    localStorage.setItem("queue_" + queueId, JSON.stringify({
-        id: queueId,
-        name: name,
-        queue: [],
-        lastServed: "—"
-    }));
+    // Save queue to Firebase
+    set(queueRef, {
+      name: name,
+      queue: [],
+      lastServed: "—"
+    });
 
-    // Create full absolute URLs
     const base = window.location.origin + window.location.pathname.replace("index.html", "");
-    
     const adminLink = `${base}admin.html?queue=${queueId}`;
     const statusLink = `${base}status.html?queue=${queueId}`;
 
     document.getElementById("result").innerHTML = `
-        <strong>Queue Created!</strong><br><br>
+      <strong>Queue Created!</strong><br><br>
+      <div><strong>Admin Link:</strong></div>
+      <div class="link-box">${adminLink}<span class="copy-icon" onclick="copyToClipboard('${adminLink}')">📋</span></div><br>
+      <div><strong>Status Link:</strong></div>
+      <div class="link-box">${statusLink}<span class="copy-icon" onclick="copyToClipboard('${statusLink}')">📋</span></div>
+      <br><span id="copyMsg" style="color: green; font-weight: bold; display:none;">Copied!</span>
+    `;
+  }
 
-        <div><strong>Admin Link:</strong></div>
-        <div class="link-box">
-            ${adminLink}
-            <span class="copy-icon" onclick="copyToClipboard('${adminLink}')">📋</span>
-        </div>
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const msg = document.getElementById("copyMsg");
+      msg.style.display = "inline";
+      setTimeout(() => msg.style.display = "none", 1500);
+    });
+  }
 
-        <br>
-
-        <div><strong>Status Link:</strong></div>
-        <div class="link-box">
-            ${statusLink}
-            <span class="copy-icon" onclick="copyToClipboard('${statusLink}')">📋</span>
-        </div>
-
-        <br>
-        <span id="copyMsg" style="color: green; font-weight: bold; display:none;">Copied!</span>
-        `;
-
-}
-
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    const msg = document.getElementById("copyMsg");
-    msg.style.display = "inline";
-    setTimeout(() => msg.style.display = "none", 1500);
-  });
-}
-
-
-  </script>
+</script>
 
 </body>
 </html>

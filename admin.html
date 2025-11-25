@@ -4,91 +4,18 @@
   <meta charset="UTF-8">
   <title>Queue Admin Panel</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f4f6f8;
-      color: #333;
-    }
-
-    h1 { text-align: center; color: #007bff; margin-bottom: 30px; }
-
-    .container {
-      max-width: 700px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 12px;
-      padding: 25px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-
-    .input-section {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-
-    input[type="text"] {
-      width: 60%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-      outline: none;
-    }
-
-    button {
-      padding: 10px 18px;
-      margin-left: 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      transition: 0.2s;
-    }
-
-    button:hover { background-color: #0056b3; }
-
-    .item {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      padding: 12px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 500;
-    }
-
-    .item.active {
-      background: #e8f0fe;
-      border-left: 4px solid #007bff;
-    }
-
-    .delete-btn {
-      background-color: red;
-      padding: 5px 10px;
-      border-radius: 5px;
-      color: white;
-      cursor: pointer;
-      border: none;
-    }
-
-    #controls { 
-      display: flex;
-      justify-content: space-between;
-      margin-top: 20px;
-    }
-
-    #controls button { 
-      flex: 1; 
-      margin: 5px; 
-    }
-
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:20px; background:#f4f6f8; color:#333; }
+    h1 { text-align:center; color:#007bff; margin-bottom:30px; }
+    .container { max-width:700px; margin:0 auto; background:#fff; border-radius:12px; padding:25px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+    .input-section { display:flex; justify-content:center; margin-bottom:20px; }
+    input[type="text"] { width:60%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:16px; outline:none; }
+    button { padding:10px 18px; margin-left:10px; background:#007bff; color:white; border:none; border-radius:6px; cursor:pointer; font-size:15px; transition:0.2s; }
+    button:hover { background:#0056b3; }
+    .item { background:#f9f9f9; border:1px solid #ddd; padding:12px; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-weight:500; }
+    .item.active { background:#e8f0fe; border-left:4px solid #007bff; }
+    .delete-btn { background:red; padding:5px 10px; border-radius:5px; color:white; cursor:pointer; border:none; }
+    #controls { display:flex; justify-content:space-between; margin-top:20px; }
+    #controls button { flex:1; margin:5px; }
   </style>
 </head>
 <body>
@@ -110,55 +37,68 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
-  function getQueueId() {
-    const p = new URLSearchParams(window.location.search);
-    return p.get("queue");
-  }
+  const firebaseConfig = {
+    apiKey: "AIzaSyB_6cF1Qk-3v6ZFsx1md9syGVlFkfTo8x0",
+    authDomain: "queuing-da34e.firebaseapp.com",
+    databaseURL: "https://queuing-da34e-default-rtdb.firebaseio.com",
+    projectId: "queuing-da34e",
+    storageBucket: "queuing-da34e.firebasestorage.app",
+    messagingSenderId: "733841664712",
+    appId: "1:733841664712:web:c909227b93771e337553fd",
+    measurementId: "G-3VXRRXXFF3"
+  };
 
-  const queueId = getQueueId();
-  const storageKey = "queue_" + queueId;
-  const channel = new BroadcastChannel("queue_" + queueId);
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-  let data = JSON.parse(localStorage.getItem(storageKey)) || {};
-  let queue = data.queue || [];
-  let lastServed = data.lastServed || "—";
+  // Get queue ID from URL
+  const params = new URLSearchParams(window.location.search);
+  const queueId = params.get("queue");
+  const queueRef = ref(db, 'queues/' + queueId);
+
+  let queue = [];
   let currentIndex = 0;
+  let lastServed = "—";
 
   const numberInput = document.getElementById("numberInput");
   const listDiv = document.getElementById("list");
 
-  function save() {
-    const saveData = {
-      id: queueId,
-      name: data.name,
-      queue: queue,
-      lastServed: lastServed
-    };
-
-    localStorage.setItem(storageKey, JSON.stringify(saveData));
-    channel.postMessage({ action: "update" });
-  }
+  // Realtime listener
+  onValue(queueRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      queue = data.queue || [];
+      lastServed = data.lastServed || "—";
+      if (currentIndex >= queue.length) currentIndex = queue.length - 1;
+      render();
+    } else {
+      queue = [];
+      currentIndex = 0;
+      lastServed = "—";
+      render();
+    }
+  });
 
   function render() {
     listDiv.innerHTML = "";
-
     queue.forEach((num, i) => {
       const div = document.createElement("div");
       div.className = "item" + (i === currentIndex ? " active" : "");
 
       const text = document.createElement("span");
-      text.textContent = `${i + 1}. Number: ${num}`;
+      text.textContent = `${i+1}. Number: ${num}`;
 
       const del = document.createElement("button");
       del.textContent = "Delete";
       del.className = "delete-btn";
       del.onclick = () => {
-        queue.splice(i, 1);
+        queue.splice(i,1);
         if (currentIndex >= queue.length) currentIndex = queue.length - 1;
-        render();
-        save();
+        saveQueue();
       };
 
       div.appendChild(text);
@@ -167,44 +107,39 @@
     });
   }
 
+  function saveQueue() {
+    set(queueRef, {
+      queue: queue,
+      lastServed: lastServed
+    });
+  }
+
   function addNumber() {
     const num = numberInput.value.trim();
     if (!num) return alert("Enter number");
-
     queue.push(num);
     numberInput.value = "";
-    render();
-    save();
+    saveQueue();
   }
 
   document.getElementById("addBtn").onclick = addNumber;
-
-  numberInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") addNumber();
-  });
+  numberInput.addEventListener("keydown", e => { if(e.key==="Enter") addNumber(); });
 
   document.getElementById("nextBtn").onclick = () => {
-    if (queue.length === 0) return alert("Queue empty");
-
+    if(queue.length===0) return alert("Queue empty");
     lastServed = queue[currentIndex];
-    queue.splice(currentIndex, 1);
-    if (currentIndex >= queue.length) currentIndex = queue.length - 1;
-
-    render();
-    save();
+    queue.splice(currentIndex,1);
+    if(currentIndex>=queue.length) currentIndex = queue.length-1;
+    saveQueue();
   };
 
   document.getElementById("clearBtn").onclick = () => {
-    if (!confirm("Clear the entire queue?")) return;
-
+    if(!confirm("Clear the entire queue?")) return;
     queue = [];
     currentIndex = 0;
-
-    render();
-    save();
+    lastServed = "—";
+    saveQueue();
   };
-
-  render();
 
 </script>
 
