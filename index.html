@@ -36,7 +36,7 @@
 <div class="box">
   <h2>Create Queue</h2>
   <input type="text" id="queueName" placeholder="Enter queue name...">
-  <button onclick="createQueue()">Generate Links</button>
+  <button id="generateBtn">Generate Links</button>
   <div class="result" id="result"></div>
 </div>
 
@@ -44,6 +44,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
   import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
+  // Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyB_6cF1Qk-3v6ZFsx1md9syGVlFkfTo8x0",
     authDomain: "queuing-da34e.firebaseapp.com",
@@ -58,6 +59,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
+  // Generate random queue ID
   function generateId(len = 10) {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     let id = "";
@@ -67,6 +69,7 @@
     return id;
   }
 
+  // Create queue in Firebase
   function createQueue() {
     const name = document.getElementById("queueName").value.trim();
     if (!name) return alert("Please enter a queue name");
@@ -74,35 +77,39 @@
     const queueId = generateId();
     const queueRef = ref(db, 'queues/' + queueId);
 
-    // Save queue to Firebase
     set(queueRef, {
       name: name,
       queue: [],
       lastServed: "—"
-    });
+    }).then(() => {
+      const base = window.location.origin + window.location.pathname.replace("index.html", "");
+      const adminLink = `${base}admin.html?queue=${queueId}`;
+      const statusLink = `${base}status.html?queue=${queueId}`;
 
-    const base = window.location.origin + window.location.pathname.replace("index.html", "");
-    const adminLink = `${base}admin.html?queue=${queueId}`;
-    const statusLink = `${base}status.html?queue=${queueId}`;
+      document.getElementById("result").innerHTML = `
+        <strong>Queue Created!</strong><br><br>
+        <div><strong>Admin Link:</strong></div>
+        <div class="link-box">${adminLink}<span class="copy-icon" data-copy="${adminLink}">📋</span></div><br>
+        <div><strong>Status Link:</strong></div>
+        <div class="link-box">${statusLink}<span class="copy-icon" data-copy="${statusLink}">📋</span></div>
+        <br><span id="copyMsg" style="color: green; font-weight: bold; display:none;">Copied!</span>
+      `;
 
-    document.getElementById("result").innerHTML = `
-      <strong>Queue Created!</strong><br><br>
-      <div><strong>Admin Link:</strong></div>
-      <div class="link-box">${adminLink}<span class="copy-icon" onclick="copyToClipboard('${adminLink}')">📋</span></div><br>
-      <div><strong>Status Link:</strong></div>
-      <div class="link-box">${statusLink}<span class="copy-icon" onclick="copyToClipboard('${statusLink}')">📋</span></div>
-      <br><span id="copyMsg" style="color: green; font-weight: bold; display:none;">Copied!</span>
-    `;
+      // Add copy functionality
+      document.querySelectorAll(".copy-icon").forEach(el => {
+        el.addEventListener("click", () => {
+          navigator.clipboard.writeText(el.getAttribute("data-copy")).then(() => {
+            const msg = document.getElementById("copyMsg");
+            msg.style.display = "inline";
+            setTimeout(() => msg.style.display = "none", 1500);
+          });
+        });
+      });
+    }).catch(err => alert("Error creating queue: " + err));
   }
 
-  function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-      const msg = document.getElementById("copyMsg");
-      msg.style.display = "inline";
-      setTimeout(() => msg.style.display = "none", 1500);
-    });
-  }
-
+  // Attach click listener to button
+  document.getElementById("generateBtn").addEventListener("click", createQueue);
 </script>
 
 </body>
