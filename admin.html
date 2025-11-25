@@ -23,40 +23,71 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
-    .input-section { display: flex; justify-content: center; margin-bottom: 20px; }
+    .input-section {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
 
     input[type="text"] {
-      width: 60%; padding: 10px; border: 1px solid #ccc;
-      border-radius: 6px; font-size: 16px; outline: none;
+      width: 60%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      outline: none;
     }
 
     button {
-      padding: 10px 18px; margin-left: 10px;
-      background-color: #007bff; color: white;
-      border: none; border-radius: 6px;
-      cursor: pointer; font-size: 15px;
+      padding: 10px 18px;
+      margin-left: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
       transition: 0.2s;
     }
 
     button:hover { background-color: #0056b3; }
 
     .item {
-      background: #f9f9f9; border: 1px solid #ddd; padding: 12px;
-      border-radius: 6px; margin-bottom: 8px; display: flex;
-      justify-content: space-between; align-items: center; font-weight: 500;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 500;
     }
 
     .item.active {
-      background: #e8f0fe; border-left: 4px solid #007bff;
+      background: #e8f0fe;
+      border-left: 4px solid #007bff;
     }
 
     .delete-btn {
-      background-color: red; padding: 5px 10px;
-      border-radius: 5px; color: white; cursor: pointer; border: none;
+      background-color: red;
+      padding: 5px 10px;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+      border: none;
     }
 
-    #controls { display: flex; justify-content: space-between; margin-top: 20px; }
-    #controls button { flex: 1; margin: 5px; }
+    #controls { 
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    #controls button { 
+      flex: 1; 
+      margin: 5px; 
+    }
 
   </style>
 </head>
@@ -75,7 +106,6 @@
 
   <div id="controls">
     <button id="nextBtn">Next</button>
-    <button id="removeBtn">Remove Current</button>
     <button id="clearBtn">Clear All</button>
   </div>
 </div>
@@ -106,6 +136,7 @@
       queue: queue,
       lastServed: lastServed
     };
+
     localStorage.setItem(storageKey, JSON.stringify(saveData));
     channel.postMessage({ action: "update" });
   }
@@ -139,6 +170,7 @@
   function addNumber() {
     const num = numberInput.value.trim();
     if (!num) return alert("Enter number");
+
     queue.push(num);
     numberInput.value = "";
     render();
@@ -162,18 +194,12 @@
     save();
   };
 
-  document.getElementById("removeBtn").onclick = () => {
-    if (queue.length === 0) return;
-    queue.splice(currentIndex, 1);
-    if (currentIndex >= queue.length) currentIndex = queue.length - 1;
-    render();
-    save();
-  };
-
   document.getElementById("clearBtn").onclick = () => {
     if (!confirm("Clear the entire queue?")) return;
+
     queue = [];
     currentIndex = 0;
+
     render();
     save();
   };
