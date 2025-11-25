@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  queue-app:
+    build: .
+    container_name: queue-app
+    ports:
+      - "1005:1005"
+    volumes:
+      - .:/usr/share/nginx/html:ro
+    restart: unless-stopped

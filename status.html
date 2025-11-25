@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SI Status</title>
+  <style>
+    body {
+      background: #fff;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      display: flex; gap: 80px; text-align: center;
+    }
+    .label { font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+    .last-number { font-size: 80px; font-weight: 700; }
+    .current-number { font-size: 250px; font-weight: 900; }
+    .next-number { font-size: 100px; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="section">
+      <div class="label">Last SI Number</div>
+      <div id="lastNumber" class="last-number">—</div>
+    </div>
+
+    <div class="section">
+      <div class="label">Current SI Number</div>
+      <div id="currentNumber" class="current-number">—</div>
+    </div>
+
+    <div class="section">
+      <div class="label">Next SI Number</div>
+      <div id="nextNumber" class="next-number">—</div>
+    </div>
+  </div>
+
+  <script>
+    function getQueueId() {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("queue");
+    }
+    const queueId = getQueueId();
+
+    const channel = new BroadcastChannel("queue_" + queueId);
+
+    function refreshUI() {
+      const data = JSON.parse(localStorage.getItem("queue_" + queueId)) || null;
+      if (!data) return;
+
+      const queue = data.queue;
+      document.getElementById("lastNumber").textContent = data.lastServed.toString().padStart(3, "0");
+      document.getElementById("currentNumber").textContent = (queue[0] || "—").toString().padStart(3, "0");
+      document.getElementById("nextNumber").textContent = (queue[1] || "—").toString().padStart(3, "0");
+    }
+
+    // Listen for real-time updates
+    channel.onmessage = (msg) => {
+      if (msg.data.action === "update") {
+        refreshUI();
+      }
+    };
+
+    refreshUI();
+  </script>
+
+</body>
+</html>
